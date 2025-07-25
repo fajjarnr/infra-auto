@@ -29,3 +29,15 @@ variable "single_nat_gateway" {
   type        = bool
   default     = true
 }
+
+variable "sg_ingress_cidr_blocks" {
+  description = "The CIDR blocks for the security group ingress rules."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "sg_egress_cidr_blocks" {
+  description = "The CIDR blocks for the security group egress rules."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}

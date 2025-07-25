@@ -6,11 +6,12 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = length(var.public_subnet_cidrs)
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_cidrs[count.index]
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+  count                                       = length(var.public_subnet_cidrs)
+  vpc_id                                      = aws_vpc.main.id
+  cidr_block                                  = var.public_subnet_cidrs[count.index]
+  availability_zone                           = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch                     = true
+  enable_resource_name_dns_a_record_on_launch = true
 
   tags = {
     Name                     = "public-subnet-${count.index + 1}"
@@ -57,7 +58,7 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_eip" "nat" {
-  count = var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : length(var.public_subnet_cidrs)) : 0
+  count  = var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : length(var.public_subnet_cidrs)) : 0
   domain = "vpc"
   tags = {
     Name = "${var.vpc_name}-nat-gw-eip-${count.index}"
@@ -75,7 +76,7 @@ resource "aws_nat_gateway" "main" {
 }
 
 resource "aws_route_table" "private" {
-  count  = var.enable_nat_gateway ? length(var.private_subnet_cidrs) : 0
+  count  = var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : length(var.private_subnet_cidrs)) : 0
   vpc_id = aws_vpc.main.id
 
   route {
@@ -84,14 +85,14 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name = "${var.vpc_name}-private-rt-${count.index}"
+    Name = var.single_nat_gateway ? "${var.vpc_name}-private-rt" : "${var.vpc_name}-private-rt-${count.index}"
   }
 }
 
 resource "aws_route_table_association" "private" {
-  count          = length(aws_subnet.private)
+  count          = var.enable_nat_gateway ? length(var.private_subnet_cidrs) : 0
   subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
+  route_table_id = var.single_nat_gateway ? aws_route_table.private[0].id : aws_route_table.private[count.index].id
 }
 
 resource "aws_security_group" "main" {
@@ -103,13 +104,13 @@ resource "aws_security_group" "main" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.sg_ingress_cidr_blocks
   }
 
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.sg_egress_cidr_blocks
   }
 }

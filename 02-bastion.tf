@@ -7,7 +7,7 @@ module "bastion" {
   source = "./modules/ec2"
 
   instance_name               = "bastion"
-  instance_type               = "t2.micro"
+  instance_type               = "t3.medium"
   os_name                     = "ubuntu"
   root_volume_size            = 30
   root_volume_type            = "gp2"
