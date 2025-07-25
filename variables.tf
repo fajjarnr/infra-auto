@@ -7,7 +7,7 @@ variable "region" {
 variable "vpc_name" {
   description = "The name of the VPC."
   type        = string
-  default     = "project"
+  default     = "openshift"
 }
 
 variable "vpc_cidr" {

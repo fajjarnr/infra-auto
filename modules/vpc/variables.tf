@@ -24,12 +24,6 @@ variable "enable_nat_gateway" {
   default     = true
 }
 
-variable "single_nat_gateway" {
-  description = "Use a single NAT Gateway for all private subnets. If false, a NAT Gateway will be created in each AZ."
-  type        = bool
-  default     = true
-}
-
 variable "sg_ingress_cidr_blocks" {
   description = "The CIDR blocks for the security group ingress rules."
   type        = list(string)
@@ -40,4 +34,9 @@ variable "sg_egress_cidr_blocks" {
   description = "The CIDR blocks for the security group egress rules."
   type        = list(string)
   default     = ["0.0.0.0/0"]
+}
+
+variable "region" {
+  description = "The AWS region to create resources in."
+  type        = string
 }
