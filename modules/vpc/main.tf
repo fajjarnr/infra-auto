@@ -16,7 +16,7 @@ resource "aws_subnet" "public" {
   enable_resource_name_dns_a_record_on_launch = true
 
   tags = {
-    Name                     = "public-subnet-${count.index + 1}"
+    Name                     = "${var.vpc_name}-public-${data.aws_availability_zones.available.names[count.index]}"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -28,7 +28,7 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name                              = "private-subnet-${count.index + 1}"
+    Name                              = "${var.vpc_name}-private-${data.aws_availability_zones.available.names[count.index]}"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
@@ -41,7 +41,6 @@ resource "aws_internet_gateway" "main" {
 }
 
 resource "aws_route_table" "public" {
-  count  = length(var.public_subnet_cidrs)
   vpc_id = aws_vpc.main.id
 
   route {
@@ -50,14 +49,14 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "${var.vpc_name}-public-rt-${count.index}"
+    Name = "${var.vpc_name}-public-rt"
   }
 }
 
 resource "aws_route_table_association" "public" {
   count          = length(aws_subnet.public)
   subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public[count.index].id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_eip" "nat" {
@@ -79,7 +78,7 @@ resource "aws_nat_gateway" "main" {
 }
 
 resource "aws_route_table" "private" {
-  count  = var.enable_nat_gateway ? length(var.private_subnet_cidrs) : 0
+  count  = var.enable_nat_gateway ? length(data.aws_availability_zones.available.names) : 0
   vpc_id = aws_vpc.main.id
 
   route {
@@ -88,20 +87,22 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name = "${var.vpc_name}-private-rt-${count.index}"
+    Name = "${var.vpc_name}-private-rt-${data.aws_availability_zones.available.names[count.index]}"
   }
 }
 
 resource "aws_vpc_endpoint_route_table_association" "private_s3" {
-  count           = var.enable_nat_gateway ? length(var.private_subnet_cidrs) : 0
+  count           = var.enable_nat_gateway ? length(data.aws_availability_zones.available.names) : 0
   route_table_id  = aws_route_table.private[count.index].id
   vpc_endpoint_id = aws_vpc_endpoint.s3.id
 }
 
 resource "aws_route_table_association" "private" {
-  count          = var.enable_nat_gateway ? length(var.private_subnet_cidrs) : 0
-  subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
+  count     = var.enable_nat_gateway ? length(aws_subnet.private) : 0
+  subnet_id = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[
+    index(data.aws_availability_zones.available.names, aws_subnet.private[count.index].availability_zone)
+  ].id
 }
 
 resource "aws_security_group" "main" {
