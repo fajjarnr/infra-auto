@@ -13,6 +13,7 @@ resource "aws_instance" "main" {
   key_name                    = var.key_name
   vpc_security_group_ids      = var.vpc_security_group_ids
   associate_public_ip_address = var.associate_public_ip_address
+  iam_instance_profile        = var.enable_ssm ? aws_iam_instance_profile.ssm[0].name : null
 
   metadata_options {
     http_endpoint = "enabled"
@@ -27,4 +28,32 @@ resource "aws_instance" "main" {
   tags = {
     Name = var.instance_name
   }
+}
+
+resource "aws_iam_role" "ssm" {
+  count = var.enable_ssm ? 1 : 0
+  name  = "${var.instance_name}-ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = { Service = "ec2.amazonaws.com" },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_core" {
+  count      = var.enable_ssm ? 1 : 0
+  role       = aws_iam_role.ssm[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "ssm" {
+  count = var.enable_ssm ? 1 : 0
+  name  = "${var.instance_name}-ssm-profile"
+  role  = aws_iam_role.ssm[0].name
 }

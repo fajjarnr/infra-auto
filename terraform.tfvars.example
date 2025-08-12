@@ -1,0 +1,8 @@
+bastion_public_key = "ssh-ed25519 AAAA... your_key_comment"
+
+# Optionally set region and tags
+# region       = "ap-southeast-1"
+# default_tags = {
+#   Project = "infra-auto"
+#   Owner   = "your-name"
+# }

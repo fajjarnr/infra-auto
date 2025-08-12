@@ -97,6 +97,11 @@ resource "aws_vpc_endpoint_route_table_association" "private_s3" {
   vpc_endpoint_id = aws_vpc_endpoint.s3.id
 }
 
+resource "aws_vpc_endpoint_route_table_association" "public_s3" {
+  route_table_id  = aws_route_table.public.id
+  vpc_endpoint_id = aws_vpc_endpoint.s3.id
+}
+
 resource "aws_route_table_association" "private" {
   count     = var.enable_nat_gateway ? length(aws_subnet.private) : 0
   subnet_id = aws_subnet.private[count.index].id

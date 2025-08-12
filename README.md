@@ -1,33 +1,53 @@
-# Pengaturan Terraform
+# Infrastruktur AWS dengan Terraform
 
-## Kunci SSH untuk Bastion Host
+Repo ini men-deploy komponen VPC, optional Bastion (EC2), dan optional EKS menggunakan Terraform modular.
 
-File `terraform.tfvars` ini berisi variabel yang digunakan oleh konfigurasi Terraform untuk membuat infrastruktur.
+## Prasyarat
+- Terraform >= 1.5
+- Kredensial AWS telah terkonfigurasi (profil/ENV)
 
-### `bastion_public_key`
+## Cara Pakai Singkat
+1. Salin contoh variabel dan sesuaikan:
+   - `cp terraform.tfvars.example terraform.tfvars`
+   - Isi `bastion_public_key`, opsional `region` dan `default_tags`.
+2. Inisialisasi dan validasi:
+   - `terraform init`
+   - `terraform fmt -recursive`
+   - `terraform validate`
+3. Terapkan:
+   - `terraform apply`
 
-Variabel `bastion_public_key` digunakan untuk menentukan kunci publik SSH yang akan digunakan untuk mengakses bastion host EC2.
+## Kunci SSH untuk Bastion (opsional)
+Jika mengaktifkan Bastion module (contoh di `02-bastion.tf`), sediakan kunci publik SSH.
 
-**Cara Membuat Kunci SSH:**
+Cara membuat kunci SSH:
 
-Jika Anda belum memiliki kunci SSH, Anda dapat membuatnya menggunakan perintah berikut di terminal Anda:
-
-```bash
+```
 ssh-keygen -t ed25519 -C "your_email@example.com"
 ```
 
-Perintah ini akan membuat dua file:
-*   `id_ed25519` (kunci privat)
-*   `id_ed25519.pub` (kunci publik)
+Isi nilai `bastion_public_key` di `terraform.tfvars`:
 
-**Cara Menggunakan Kunci Publik:**
-
-1.  Buka file `id_ed25519.pub` dengan editor teks.
-2.  Salin seluruh konten file tersebut.
-3.  Tempel konten tersebut sebagai nilai untuk variabel `bastion_public_key` di dalam file `terraform.tfvars`, seperti contoh di bawah ini:
-
-```hcl
+```
 bastion_public_key = "ssh-ed25519 AAAA..."
 ```
 
-**PENTING:** Jaga kerahasiaan kunci privat (`id_ed25519`) Anda. Jangan pernah membagikannya atau menyimpannya di dalam repositori ini.
+PENTING: Jaga kerahasiaan kunci privat Anda dan jangan commit `terraform.tfvars`.
+
+## Default Tags
+Gunakan `default_tags` untuk men-tag resource secara konsisten melalui provider:
+
+```
+default_tags = {
+  Project = "infra-auto"
+  Owner   = "your-name"
+}
+```
+
+## Catatan Keamanan Lab
+Security Group default di VPC module saat ini mengizinkan semua inbound untuk keperluan lab. Ubah sesuai kebutuhan untuk lingkungan non-lab.
+
+## Modul
+- `modules/vpc`: Membuat VPC, subnet publik/privat, IGW, NAT (opsional), endpoint S3, dan SG default.
+- `modules/ec2`: Instance EC2 dengan dukungan SSM (role/profil IAM otomatis) dan pilihan OS/arsitektur.
+- `modules/eks`: EKS Cluster + Node Group, addon inti, dan role IAM yang diperlukan.

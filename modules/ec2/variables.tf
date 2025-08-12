@@ -55,3 +55,15 @@ variable "root_volume_type" {
   type        = string
   default     = "gp3"
 }
+
+variable "instance_architecture" {
+  description = "The architecture of the instance (amd64 or arm64)."
+  type        = string
+  default     = "amd64"
+}
+
+variable "enable_ssm" {
+  description = "Create and attach an IAM role and instance profile for AWS Systems Manager (SSM) access."
+  type        = bool
+  default     = true
+}
