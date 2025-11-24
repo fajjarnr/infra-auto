@@ -22,3 +22,13 @@ output "vpc_endpoint_s3_id" {
   description = "The ID of the S3 VPC endpoint."
   value       = aws_vpc_endpoint.s3.id
 }
+
+output "nat_gateway_id" {
+  description = "The ID of the NAT gateway (if enabled)."
+  value       = var.enable_nat_gateway ? aws_nat_gateway.main[0].id : null
+}
+
+output "internet_gateway_id" {
+  description = "The ID of the internet gateway."
+  value       = aws_internet_gateway.main.id
+}
