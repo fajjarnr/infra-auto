@@ -2,9 +2,13 @@ resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   instance_tenancy     = "default"
   enable_dns_hostnames = true
-  tags = {
-    Name = var.vpc_name
-  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = var.vpc_name
+    }
+  )
 }
 
 resource "aws_subnet" "public" {
@@ -15,10 +19,13 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch                     = true
   enable_resource_name_dns_a_record_on_launch = true
 
-  tags = {
-    Name                     = "${var.vpc_name}-public-${data.aws_availability_zones.available.names[count.index]}"
-    "kubernetes.io/role/elb" = "1"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name                     = "${var.vpc_name}-public-${data.aws_availability_zones.available.names[count.index]}"
+      "kubernetes.io/role/elb" = "1"
+    }
+  )
 }
 
 resource "aws_subnet" "private" {
@@ -27,17 +34,24 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnet_cidrs[count.index]
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
-  tags = {
-    Name                              = "${var.vpc_name}-private-${data.aws_availability_zones.available.names[count.index]}"
-    "kubernetes.io/role/internal-elb" = "1"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name                              = "${var.vpc_name}-private-${data.aws_availability_zones.available.names[count.index]}"
+      "kubernetes.io/role/internal-elb" = "1"
+    }
+  )
 }
 
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
-  tags = {
-    Name = "${var.vpc_name}-igw"
-  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-igw"
+    }
+  )
 }
 
 resource "aws_route_table" "public" {
@@ -48,9 +62,12 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = {
-    Name = "${var.vpc_name}-public-rt"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-public-rt"
+    }
+  )
 }
 
 resource "aws_route_table_association" "public" {
@@ -62,9 +79,13 @@ resource "aws_route_table_association" "public" {
 resource "aws_eip" "nat" {
   count  = var.enable_nat_gateway ? 1 : 0
   domain = "vpc"
-  tags = {
-    Name = "${var.vpc_name}-nat-gw-eip"
-  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-nat-gw-eip"
+    }
+  )
 }
 
 resource "aws_nat_gateway" "main" {
@@ -72,9 +93,12 @@ resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat[0].id
   subnet_id     = aws_subnet.public[0].id
 
-  tags = {
-    Name = "${var.vpc_name}-nat-gw"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-nat-gw"
+    }
+  )
 }
 
 resource "aws_route_table" "private" {
@@ -86,9 +110,12 @@ resource "aws_route_table" "private" {
     nat_gateway_id = aws_nat_gateway.main[0].id
   }
 
-  tags = {
-    Name = "${var.vpc_name}-private-rt-${data.aws_availability_zones.available.names[count.index]}"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-private-rt-${data.aws_availability_zones.available.names[count.index]}"
+    }
+  )
 }
 
 resource "aws_vpc_endpoint_route_table_association" "private_s3" {
@@ -134,7 +161,10 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id       = aws_vpc.main.id
   service_name = "com.amazonaws.${var.region}.s3"
 
-  tags = {
-    Name = "${var.vpc_name}-vpce-s3"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-vpce-s3"
+    }
+  )
 }

@@ -21,13 +21,18 @@ resource "aws_instance" "main" {
   }
 
   root_block_device {
-    volume_size = var.root_volume_size
-    volume_type = var.root_volume_type
+    volume_size           = var.root_volume_size
+    volume_type           = var.root_volume_type
+    encrypted             = true
+    delete_on_termination = true
   }
 
-  tags = {
-    Name = var.instance_name
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = var.instance_name
+    }
+  )
 }
 
 resource "aws_iam_role" "ssm" {
@@ -38,12 +43,14 @@ resource "aws_iam_role" "ssm" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
+        Effect    = "Allow",
         Principal = { Service = "ec2.amazonaws.com" },
-        Action = "sts:AssumeRole"
+        Action    = "sts:AssumeRole"
       }
     ]
   })
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "ssm_core" {
@@ -56,4 +63,6 @@ resource "aws_iam_instance_profile" "ssm" {
   count = var.enable_ssm ? 1 : 0
   name  = "${var.instance_name}-ssm-profile"
   role  = aws_iam_role.ssm[0].name
+
+  tags = var.tags
 }

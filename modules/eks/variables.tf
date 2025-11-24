@@ -37,3 +37,69 @@ variable "cluster_version" {
   type        = string
   default     = "1.30"
 }
+
+variable "endpoint_private_access" {
+  description = "Enable private API server endpoint."
+  type        = bool
+  default     = true
+}
+
+variable "endpoint_public_access" {
+  description = "Enable public API server endpoint."
+  type        = bool
+  default     = true
+}
+
+variable "public_access_cidrs" {
+  description = "List of CIDR blocks that can access the public API server endpoint."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "enabled_cluster_log_types" {
+  description = "List of control plane logging types to enable."
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
+variable "kms_key_arn" {
+  description = "ARN of KMS key for secrets encryption. If not provided, uses AWS managed key."
+  type        = string
+  default     = ""
+}
+
+variable "vpc_cni_version" {
+  description = "Version of the VPC CNI addon."
+  type        = string
+  default     = null
+}
+
+variable "coredns_version" {
+  description = "Version of the CoreDNS addon."
+  type        = string
+  default     = null
+}
+
+variable "kube_proxy_version" {
+  description = "Version of the kube-proxy addon."
+  type        = string
+  default     = null
+}
+
+variable "node_disk_size" {
+  description = "Disk size in GB for worker nodes."
+  type        = number
+  default     = 20
+}
+
+variable "node_labels" {
+  description = "Key-value map of Kubernetes labels for nodes."
+  type        = map(string)
+  default     = {}
+}
+
+variable "tags" {
+  description = "Additional tags to apply to resources."
+  type        = map(string)
+  default     = {}
+}
