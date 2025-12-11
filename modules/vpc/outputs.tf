@@ -5,12 +5,12 @@ output "vpc_id" {
 
 output "public_subnet_ids" {
   description = "The IDs of the public subnets."
-  value       = aws_subnet.public[*].id
+  value       = [for key in sort(keys(aws_subnet.public)) : aws_subnet.public[key].id]
 }
 
 output "private_subnet_ids" {
   description = "The IDs of the private subnets."
-  value       = aws_subnet.private[*].id
+  value       = [for key in sort(keys(aws_subnet.private)) : aws_subnet.private[key].id]
 }
 
 output "security_group_id" {

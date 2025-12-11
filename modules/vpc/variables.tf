@@ -8,14 +8,22 @@ variable "vpc_cidr" {
   type        = string
 }
 
-variable "public_subnet_cidrs" {
-  description = "The CIDR blocks for the public subnets."
-  type        = list(string)
+variable "public_subnets" {
+  description = "Definitions for the public subnets. availability_zone is optional and auto-filled when omitted."
+  type = list(object({
+    cidr              = string
+    availability_zone = optional(string)
+    name_suffix       = optional(string)
+  }))
 }
 
-variable "private_subnet_cidrs" {
-  description = "The CIDR blocks for the private subnets."
-  type        = list(string)
+variable "private_subnets" {
+  description = "Definitions for the private subnets. availability_zone is optional and auto-filled when omitted."
+  type = list(object({
+    cidr              = string
+    availability_zone = optional(string)
+    name_suffix       = optional(string)
+  }))
 }
 
 variable "enable_nat_gateway" {

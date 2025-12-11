@@ -4,6 +4,8 @@ locals {
     "amazon_linux" = data.aws_ami.amazon_linux.id
     "rhel9"        = data.aws_ami.rhel9.id
   }
+
+  base_tags = var.tags
 }
 
 resource "aws_instance" "main" {
@@ -27,12 +29,7 @@ resource "aws_instance" "main" {
     delete_on_termination = true
   }
 
-  tags = merge(
-    var.tags,
-    {
-      Name = var.instance_name
-    }
-  )
+  tags = merge(local.base_tags, { Name = var.instance_name })
 }
 
 resource "aws_iam_role" "ssm" {
@@ -50,7 +47,7 @@ resource "aws_iam_role" "ssm" {
     ]
   })
 
-  tags = var.tags
+  tags = local.base_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ssm_core" {
@@ -64,5 +61,5 @@ resource "aws_iam_instance_profile" "ssm" {
   name  = "${var.instance_name}-ssm-profile"
   role  = aws_iam_role.ssm[0].name
 
-  tags = var.tags
+  tags = local.base_tags
 }

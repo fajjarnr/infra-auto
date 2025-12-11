@@ -31,8 +31,21 @@ cp terraform.tfvars.example terraform.tfvars
 ```hcl
 bastion_public_key = "ssh-ed25519 AAAA..."
 
-# Optional: customize region and tags
-region = "ap-southeast-1"
+name_prefix = "openshift"
+environment = "production"
+region      = "ap-southeast-1"
+
+public_subnets = [
+  { cidr = "10.0.0.0/20" },
+  { cidr = "10.0.16.0/20" },
+  { cidr = "10.0.32.0/20" }
+]
+
+private_subnets = [
+  { cidr = "10.0.48.0/20" },
+  { cidr = "10.0.64.0/20" },
+  { cidr = "10.0.80.0/20" }
+]
 
 default_tags = {
   Project     = "infra-auto"
@@ -41,6 +54,8 @@ default_tags = {
   ManagedBy   = "terraform"
 }
 ```
+
+> **Tip:** `name_prefix` dan `environment` otomatis digabung menjadi prefix penamaan (contoh: `openshift-production-vpc`). Ubah dua variabel ini untuk mengganti nama resource di seluruh modul secara konsisten.
 
 ### 3. Deploy Infrastructure
 
@@ -108,8 +123,14 @@ Membuat VPC dengan public/private subnets, Internet Gateway, NAT Gateway (option
 **Key Variables:**
 ```hcl
 vpc_cidr             = "10.0.0.0/16"           # VPC CIDR block
-public_subnet_cidrs  = ["10.0.0.0/20", ...]   # Public subnet CIDRs
-private_subnet_cidrs = ["10.0.48.0/20", ...]  # Private subnet CIDRs
+public_subnets = [                            # Public subnets (optional AZ override)
+  { cidr = "10.0.0.0/20", availability_zone = "ap-southeast-1a" },
+  { cidr = "10.0.16.0/20", availability_zone = "ap-southeast-1b" }
+]
+private_subnets = [                           # Private subnets
+  { cidr = "10.0.48.0/20", availability_zone = "ap-southeast-1a" },
+  { cidr = "10.0.64.0/20", availability_zone = "ap-southeast-1b" }
+]
 enable_nat_gateway   = true                    # Enable NAT Gateway
 region              = "ap-southeast-1"         # AWS region
 ```
@@ -183,9 +204,11 @@ enabled_cluster_log_types = [                  # Enable all logs
 ]
 
 # Addons (optional version pinning)
-vpc_cni_version    = null                      # Latest if null
-coredns_version    = null                      # Latest if null
-kube_proxy_version = null                      # Latest if null
+addons = {
+  "vpc-cni" = { version = null },
+  "coredns" = { version = null },
+  "kube-proxy" = { version = null }
+}
 
 # Node Configuration
 node_disk_size = 20                            # Node disk size (GB)
@@ -297,9 +320,11 @@ module "eks" {
   source = "./modules/eks"
   # ... other variables ...
 
-  vpc_cni_version    = "v1.15.1-eksbuild.1"
-  coredns_version    = "v1.10.1-eksbuild.2"
-  kube_proxy_version = "v1.28.1-eksbuild.1"
+  addons = {
+    "vpc-cni"    = { version = "v1.15.1-eksbuild.1" }
+    "coredns"    = { version = "v1.10.1-eksbuild.2" }
+    "kube-proxy" = { version = "v1.28.1-eksbuild.1" }
+  }
 }
 ```
 

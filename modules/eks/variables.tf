@@ -68,22 +68,17 @@ variable "kms_key_arn" {
   default     = ""
 }
 
-variable "vpc_cni_version" {
-  description = "Version of the VPC CNI addon."
-  type        = string
-  default     = null
-}
-
-variable "coredns_version" {
-  description = "Version of the CoreDNS addon."
-  type        = string
-  default     = null
-}
-
-variable "kube_proxy_version" {
-  description = "Version of the kube-proxy addon."
-  type        = string
-  default     = null
+variable "addons" {
+  description = "Map of EKS addon configurations keyed by addon name. Set version to null to track the latest."
+  type = map(object({
+    version                     = optional(string)
+    resolve_conflicts_on_update = optional(string)
+  }))
+  default = {
+    "vpc-cni"    = {}
+    "coredns"    = {}
+    "kube-proxy" = {}
+  }
 }
 
 variable "node_disk_size" {

@@ -1,3 +1,18 @@
+locals {
+  base_tags = var.tags
+
+  cluster_role_policies = toset([
+    "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+    "arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
+  ])
+
+  node_role_policies = toset([
+    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+    "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
+  ])
+}
+
 resource "aws_iam_role" "cluster" {
   name = "${var.cluster_name}-cluster-role"
 
@@ -14,16 +29,12 @@ resource "aws_iam_role" "cluster" {
     ]
   })
 
-  tags = var.tags
+  tags = local.base_tags
 }
 
-resource "aws_iam_role_policy_attachment" "cluster_amazon_eks_cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.cluster.name
-}
-
-resource "aws_iam_role_policy_attachment" "cluster_amazon_eks_service_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+resource "aws_iam_role_policy_attachment" "cluster" {
+  for_each   = local.cluster_role_policies
+  policy_arn = each.value
   role       = aws_iam_role.cluster.name
 }
 
@@ -43,21 +54,12 @@ resource "aws_iam_role" "node_group" {
     ]
   })
 
-  tags = var.tags
+  tags = local.base_tags
 }
 
-resource "aws_iam_role_policy_attachment" "node_group_amazon_eks_worker_node_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.node_group.name
-}
-
-resource "aws_iam_role_policy_attachment" "node_group_amazon_ec2_container_registry_read_only" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.node_group.name
-}
-
-resource "aws_iam_role_policy_attachment" "node_group_amazon_eks_cni_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+resource "aws_iam_role_policy_attachment" "node_group" {
+  for_each   = local.node_role_policies
+  policy_arn = each.value
   role       = aws_iam_role.node_group.name
 }
 
@@ -85,43 +87,19 @@ resource "aws_eks_cluster" "main" {
     }
   }
 
-  tags = merge(
-    var.tags,
-    {
-      Name = var.cluster_name
-    }
-  )
+  tags = merge(local.base_tags, { Name = var.cluster_name })
 
-  depends_on = [
-    aws_iam_role_policy_attachment.cluster_amazon_eks_cluster_policy,
-  ]
+  depends_on = [aws_iam_role_policy_attachment.cluster]
 }
 
-resource "aws_eks_addon" "vpc_cni" {
+resource "aws_eks_addon" "this" {
+  for_each                    = var.addons
   cluster_name                = aws_eks_cluster.main.name
-  addon_name                  = "vpc-cni"
-  addon_version               = var.vpc_cni_version
-  resolve_conflicts_on_update = "PRESERVE"
+  addon_name                  = each.key
+  addon_version               = try(each.value.version, null)
+  resolve_conflicts_on_update = try(each.value.resolve_conflicts_on_update, "PRESERVE")
 
-  tags = var.tags
-}
-
-resource "aws_eks_addon" "coredns" {
-  cluster_name                = aws_eks_cluster.main.name
-  addon_name                  = "coredns"
-  addon_version               = var.coredns_version
-  resolve_conflicts_on_update = "PRESERVE"
-
-  tags = var.tags
-}
-
-resource "aws_eks_addon" "kube_proxy" {
-  cluster_name                = aws_eks_cluster.main.name
-  addon_name                  = "kube-proxy"
-  addon_version               = var.kube_proxy_version
-  resolve_conflicts_on_update = "PRESERVE"
-
-  tags = var.tags
+  tags = local.base_tags
 }
 
 resource "aws_eks_node_group" "main" {
@@ -145,21 +123,12 @@ resource "aws_eks_node_group" "main" {
 
   labels = var.node_labels
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.cluster_name}-node-group"
-    }
-  )
+  tags = merge(local.base_tags, { Name = "${var.cluster_name}-node-group" })
 
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [scaling_config[0].desired_size]
   }
 
-  depends_on = [
-    aws_iam_role_policy_attachment.node_group_amazon_eks_worker_node_policy,
-    aws_iam_role_policy_attachment.node_group_amazon_ec2_container_registry_read_only,
-    aws_iam_role_policy_attachment.node_group_amazon_eks_cni_policy,
-  ]
+  depends_on = [aws_iam_role_policy_attachment.node_group]
 }

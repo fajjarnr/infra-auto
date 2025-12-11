@@ -4,10 +4,22 @@ variable "region" {
   default     = "ap-southeast-1"
 }
 
-variable "vpc_name" {
-  description = "The name of the VPC."
+variable "name_prefix" {
+  description = "Project or team identifier used as the leading portion for all resource names."
   type        = string
   default     = "openshift"
+}
+
+variable "environment" {
+  description = "Environment identifier that augments the name prefix (e.g. dev, staging, prod)."
+  type        = string
+  default     = "dev"
+}
+
+variable "vpc_name" {
+  description = "Override for the VPC Name tag. Leave empty to derive from name_prefix/environment."
+  type        = string
+  default     = ""
 }
 
 variable "vpc_cidr" {
@@ -21,25 +33,41 @@ variable "vpc_cidr" {
   }
 }
 
-variable "public_subnet_cidrs" {
-  description = "The CIDR blocks for the public subnets."
-  type        = list(string)
-  default     = ["10.0.0.0/20", "10.0.16.0/20", "10.0.32.0/20"]
+variable "public_subnets" {
+  description = "Definitions for each public subnet. If availability_zone is omitted it will be auto-assigned."
+  type = list(object({
+    cidr              = string
+    availability_zone = optional(string)
+    name_suffix       = optional(string)
+  }))
+  default = [
+    { cidr = "10.0.0.0/20" },
+    { cidr = "10.0.16.0/20" },
+    { cidr = "10.0.32.0/20" }
+  ]
 
   validation {
-    condition     = length(var.public_subnet_cidrs) > 0 && alltrue([for c in var.public_subnet_cidrs : can(cidrnetmask(c))])
-    error_message = "public_subnet_cidrs must be a non-empty list of valid CIDR blocks."
+    condition     = length(var.public_subnets) > 0 && alltrue([for s in var.public_subnets : can(cidrnetmask(s.cidr))])
+    error_message = "public_subnets must be a non-empty list of objects with valid CIDR blocks."
   }
 }
 
-variable "private_subnet_cidrs" {
-  description = "The CIDR blocks for the private subnets."
-  type        = list(string)
-  default     = ["10.0.48.0/20", "10.0.64.0/20", "10.0.80.0/20"]
+variable "private_subnets" {
+  description = "Definitions for each private subnet. If availability_zone is omitted it will be auto-assigned."
+  type = list(object({
+    cidr              = string
+    availability_zone = optional(string)
+    name_suffix       = optional(string)
+  }))
+  default = [
+    { cidr = "10.0.48.0/20" },
+    { cidr = "10.0.64.0/20" },
+    { cidr = "10.0.80.0/20" }
+  ]
 
   validation {
-    condition     = length(var.private_subnet_cidrs) > 0 && alltrue([for c in var.private_subnet_cidrs : can(cidrnetmask(c))])
-    error_message = "private_subnet_cidrs must be a non-empty list of valid CIDR blocks."
+    condition     = length(var.private_subnets) > 0 && alltrue([for s in var.private_subnets : can(cidrnetmask(s.cidr))])
+    error_message = "private_subnets must be a non-empty list of objects with valid CIDR blocks."
   }
 }
 
