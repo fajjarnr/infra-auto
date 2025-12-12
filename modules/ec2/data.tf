@@ -15,8 +15,8 @@ locals {
 
   rhel9_name_pattern = (
     var.instance_architecture == "arm64"
-    ? "RHEL-9.*_HVM-*-ARM64-*-Hourly2-GP2"
-    : "RHEL-9.*_HVM-*-x86_64-*-Hourly2-GP2"
+    ? "RHEL-9.*_HVM-*-ARM64-*-Hourly2-GP3"
+    : "RHEL-9.*_HVM-*-x86_64-*-Hourly2-GP3"
   )
 }
 
