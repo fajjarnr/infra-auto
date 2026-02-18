@@ -11,8 +11,8 @@
 #   min_size         = 2
 
 #   addons = {
-#     "vpc-cni" = { version = null }
-#     "coredns" = { version = null }
+#     "vpc-cni"    = { version = null }
+#     "coredns"    = { version = null }
 #     "kube-proxy" = { version = null }
 #   }
 # }

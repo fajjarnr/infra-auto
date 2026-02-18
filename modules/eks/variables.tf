@@ -35,7 +35,7 @@ variable "min_size" {
 variable "cluster_version" {
   description = "The Kubernetes version for the EKS cluster."
   type        = string
-  default     = "1.30"
+  default     = "1.33"
 }
 
 variable "endpoint_private_access" {
